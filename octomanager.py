@@ -58,6 +58,8 @@ class GithubRepositoryManager(object):
                 'Assigning {} to PR #{}.'.format(assignee.login, pr_number)
             )
             issue.edit(assignee=assignee)
+        commit = pull_request.get_commits().reversed[0]
+        commit.create_status(status)
 
 
 class PullRequestAssignmentDriver(object):

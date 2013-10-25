@@ -4,9 +4,15 @@ from nose.tools import assert_raises, eq_
 from octomanager import ConfigurationError, perform_batch_job
 
 
-def _add_single_unassigned_pull_request_and_return_issue(github_mock):
+def _add_single_unassigned_pull_request_and_return_issue(
+                                        github_mock, pull_request_mock=None):
+    if pull_request_mock is None:
+        pull_request_mock = Mock(assignee=None)
+    pull_request_mock.get_commits.return_value.reversed = [
+        Mock(), Mock()
+    ]
     github_mock.return_value.get_repo.return_value.get_pulls.return_value = [
-        Mock(assignee=None)
+        pull_request_mock
     ]
     issue = Mock(assignee=None)
     github_mock.return_value.get_repo.return_value.get_issue.return_value = (
@@ -72,3 +78,20 @@ def test_empty_list_of_users_raises_configurationerror(github, repo_users):
     repo_users[repo_name] = []
     with assert_raises(ConfigurationError):
         perform_batch_job(repo_name)
+
+
+@patch('octomanager.REPO_USERS', new_callable=dict)
+@patch('octomanager.Github')
+def test_pull_requests_are_marked_as_pending_if_not_already(github,
+                                                            repo_users):
+    repo_name = 'org/mark_pending'
+    repo_users[repo_name] = ['user #1', 'user #2']
+    most_recent_commit = Mock()
+    _add_repository_with_name(github, repo_name)
+    pull_request = Mock(assignee=None)
+    _add_single_unassigned_pull_request_and_return_issue(github, pull_request)
+    pull_request.get_commits.return_value.reversed = [
+        most_recent_commit, Mock()
+    ]
+    perform_batch_job(repo_name)
+    eq_([call('pending')], most_recent_commit.create_status.call_args_list)
