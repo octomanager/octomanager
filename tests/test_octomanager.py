@@ -15,6 +15,10 @@ def _add_single_unassigned_pull_request_and_return_issue(github_mock):
     return issue
 
 
+def _add_repository_with_name(github_mock, repo_name):
+    github_mock.return_value.get_repo.return_value = Mock(full_name=repo_name)
+
+
 @patch('octomanager.random')
 @patch('octomanager.REPO_USERS', new_callable=dict)
 @patch('octomanager.Github')
@@ -22,6 +26,7 @@ def test_assigns_users_randomly_to_an_unassigned_pull_request(
                                                 github, repo_users, random):
     repo_name = 'some_org/random_assignment'
     repo_users[repo_name] = ['user #1', 'user #2']
+    _add_repository_with_name(github, repo_name)
     issue = _add_single_unassigned_pull_request_and_return_issue(github)
     octomanage(repo_name)
     eq_([call(repo_users[repo_name])], random.choice.call_args_list)
@@ -44,6 +49,7 @@ def test_specified_repo_is_acted_against(github):
 def test_specific_repo_users_are_selected_from(github, repo_users, random):
     repo_name = 'some_org/repo_user_test'
     repo_users[repo_name] = ['user #1', 'user #2']
+    _add_repository_with_name(github, repo_name)
     _add_single_unassigned_pull_request_and_return_issue(github)
     octomanage(repo_name)
     eq_([call(repo_users[repo_name])], random.choice.call_args_list)
