@@ -11,7 +11,7 @@ def _get_authd_github():
     return Github("63c645c4c54933d1364e3f5367a55defe24b626f")
 
 
-class OctoManage(object):
+class GithubRepositoryManager(object):
 
     def __init__(self):
         self.github = _get_authd_github()
@@ -30,7 +30,7 @@ class OctoManage(object):
 
 
 def octomanage():
-    OctoManage()
+    GithubRepositoryManager()
 
 
 if __name__ == '__main__':
