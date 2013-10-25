@@ -2,6 +2,9 @@
 from github import Github
 
 
+USERS = ['arachnegl']
+
+
 def _get_authd_github():
     return Github("63c645c4c54933d1364e3f5367a55defe24b626f")
 
@@ -13,7 +16,7 @@ class OctoManage(object):
         self._perform_pull_request_assignment('octomanager/test-repo')
 
     def _get_assignee(self):
-        return self.github.get_user('arachnegl')
+        return self.github.get_user(USERS[0])
 
     def _perform_pull_request_assignment(self, repo_name):
         repo = self.github.get_repo(repo_name)
