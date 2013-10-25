@@ -105,6 +105,9 @@ class GithubRepositoryManager(object):
                 'Assigning {} to PR #{}.'.format(assignee.login, pr_number)
             )
             issue.edit(assignee=assignee)
+            GithubStorage.store_pull_request_approver(
+                self.repo.full_name, pr_number, assignee.login
+            )
 
     def set_pull_request_status(self, pull_request, status):
         commit = pull_request.get_commits().reversed[0]

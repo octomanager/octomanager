@@ -127,7 +127,6 @@ class TestPullRequestAssignment(object):
 
     def test_approval_comment_sets_success_status(self, github,
                                                         repo_users):
-
         repo_name = 'some_org/some_repo'
         repo_users[repo_name] = ['a user']
         github, pull_requests, issues = _enhance_github_mock(github,
@@ -147,6 +146,19 @@ class TestPullRequestAssignment(object):
 
         eq_(call('success'),
             most_recent_commit.create_status.call_args_list[-1])
+
+    @patch('octomanager.GithubStorage')
+    def test_approval_assignment_is_stored(self, storage, github, repo_users):
+        repo_name = 'org/store_approvals'
+        user_name = 'a user'
+        repo_users[repo_name] = [user_name]
+        github, pull_requests, _ = _enhance_github_mock(
+            github, repo_name, [None]
+        )
+        github.return_value.get_user.return_value = Mock(login=user_name)
+        perform_batch_job(repo_name)
+        eq_([call(repo_name, pull_requests[0].number, user_name)],
+            storage.store_pull_request_approver.call_args_list)
 
 
 @patch('octomanager.REPO_USERS', {})
