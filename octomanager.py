@@ -4,7 +4,9 @@ import random
 from github import Github
 
 
-USERS = ['arachnegl', 'OddBloke']
+REPO_USERS = {
+    'octomanager/test-repo': ['arachnegl', 'OddBloke'],
+}
 
 
 def _get_authd_github():
@@ -16,9 +18,10 @@ class GithubRepositoryManager(object):
     def __init__(self, repo_name):
         self.github = _get_authd_github()
         self.repo = self.github.get_repo(repo_name)
+        self.repo_name = repo_name
 
     def _get_assignee(self):
-        return self.github.get_user(random.choice(USERS))
+        return self.github.get_user(random.choice(REPO_USERS[self.repo_name]))
 
     def get_pulls(self):
         return self.repo.get_pulls()
