@@ -21,6 +21,19 @@ class ConfigurationError(Exception):
     pass
 
 
+ERROR = object()
+FAILURE = object()
+PENDING = object()
+SUCCESS = object()
+
+COMMIT_STATUSES = {
+    ERROR: 'error',
+    FAILURE: 'failure',
+    PENDING: 'pending',
+    SUCCESS: 'success',
+}
+
+
 class GithubRepositoryManager(object):
 
     def __init__(self, repo_name):
@@ -61,14 +74,15 @@ class GithubRepositoryManager(object):
 
     def set_pull_request_status(self, pull_request, status):
         commit = pull_request.get_commits().reversed[0]
-        commit.create_status(status)
+        status_string = COMMIT_STATUSES[status]
+        commit.create_status(status_string)
 
 
 def perform_batch_job(repo_name):
     repo_manager = GithubRepositoryManager(repo_name)
     pull_requests = repo_manager.get_pulls()
     for pull_request in pull_requests:
-        repo_manager.set_pull_request_status(pull_request, 'pending')
+        repo_manager.set_pull_request_status(pull_request, PENDING)
         repo_manager.perform_pull_request_assignment(pull_request)
 
 
