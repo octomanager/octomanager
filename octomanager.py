@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import random
+
 from github import Github
 
 
@@ -16,7 +18,7 @@ class OctoManage(object):
         self._perform_pull_request_assignment('octomanager/test-repo')
 
     def _get_assignee(self):
-        return self.github.get_user(USERS[0])
+        return self.github.get_user(random.choice(USERS))
 
     def _perform_pull_request_assignment(self, repo_name):
         repo = self.github.get_repo(repo_name)
