@@ -7,6 +7,8 @@ from github import Github
 
 LOGGER = logging.getLogger('octomanager')
 
+APPROVAL_PHRASE = 'OCTOSITTER: +1'
+
 REPO_USERS = {
     'octomanager/test-repo': ['arachnegl', 'OddBloke'],
 }
@@ -76,10 +78,13 @@ class GithubRepositoryManager(object):
         commit = pull_request.get_commits().reversed[0]
         status_string = COMMIT_STATUSES[status]
         commit.create_status(status_string)
+
+    def check_for_pull_request_approval(self, pull_request):
         issue = self.repo.get_issue(pull_request.number)
         for comment in issue.get_comments():
-            if comment.user.login == issue.assignee.login and 'OCTOSITTER: +1' in comment.body:
-                commit.create_status('success')
+            if (comment.user.login == issue.assignee.login
+                    and APPROVAL_PHRASE in comment.body):
+                self.set_pull_request_status(pull_request, SUCCESS)
 
 
 def perform_batch_job(repo_name):
@@ -88,6 +93,7 @@ def perform_batch_job(repo_name):
     for pull_request in pull_requests:
         repo_manager.set_pull_request_status(pull_request, PENDING)
         repo_manager.perform_pull_request_assignment(pull_request)
+        repo_manager.check_for_pull_request_approval(pull_request)
 
 
 if __name__ == '__main__':
