@@ -58,6 +58,8 @@ class GithubRepositoryManager(object):
                 'Assigning {} to PR #{}.'.format(assignee.login, pr_number)
             )
             issue.edit(assignee=assignee)
+
+    def set_pull_request_status(self, pull_request, status):
         commit = pull_request.get_commits().reversed[0]
         commit.create_status(status)
 
@@ -73,6 +75,7 @@ class PullRequestAssignmentDriver(object):
         pull_requests = repo_manager.get_pulls()
         for pull_request in pull_requests:
             repo_manager.perform_pull_request_assignment(pull_request)
+            repo_manager.set_pull_request_status(pull_request, 'pending')
 
 
 def perform_batch_job(repo_name):
