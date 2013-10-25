@@ -50,6 +50,7 @@ class PullRequestAssignmentDriver(object):
         self.repo_name = repo_name
 
     def perform_assignments(self):
+        LOGGER.info('Performing pull request assignments...')
         repo_manager = GithubRepositoryManager(self.repo_name)
         pull_requests = repo_manager.get_pulls()
         for pull_request in pull_requests:
