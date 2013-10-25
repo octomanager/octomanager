@@ -33,7 +33,10 @@ REPO_USERS = {
 
 def _get_authd_github():
     LOGGER.info("Retrieving auth'd Github instance...")
-    return Github("63c645c4c54933d1364e3f5367a55defe24b626f")
+    github = Github("63c645c4c54933d1364e3f5367a55defe24b626f")
+    rate = github.get_rate_limit().rate
+    LOGGER.info('{} of {} API calls remaining until {}.'.format(rate.remaining, rate.limit, rate.reset))
+    return github
 
 
 class ConfigurationError(Exception):
