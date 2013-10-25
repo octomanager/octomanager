@@ -41,7 +41,9 @@ class GithubRepositoryManager(object):
         LOGGER.info('[{}] {}'.format(self.repo.full_name, msg))
 
     def _get_assignee(self):
-        return self.github.get_user(random.choice(REPO_USERS[self.repo.full_name]))
+        return self.github.get_user(
+            random.choice(REPO_USERS[self.repo.full_name])
+        )
 
     def get_pulls(self):
         return self.repo.get_pulls()
