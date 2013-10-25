@@ -56,6 +56,18 @@ COMMIT_STATUSES = {
 }
 
 
+class GithubStorage(object):
+
+    @staticmethod
+    def store_pull_request_approver(repo, pull_request_id, approver_login):
+        github = _get_authd_github()
+        repo = github.get_repo(repo)
+        issue = repo.get_issue(pull_request_id)
+        issue.create_comment(
+            '@{} has been assigned as a reviewer.'.format(approver_login)
+        )
+
+
 class GithubRepositoryManager(object):
 
     def __init__(self, repo_name):
