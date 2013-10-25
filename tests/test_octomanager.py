@@ -1,7 +1,7 @@
-from mock import call, Mock, patch
-from nose.tools import eq_
+from mock import call, MagicMock, Mock, patch
+from nose.tools import assert_raises, eq_
 
-from octomanager import octomanage
+from octomanager import ConfigurationError, octomanage
 
 
 def _add_single_unassigned_pull_request_and_return_issue(github_mock):
@@ -36,6 +36,7 @@ def test_assigns_users_randomly_to_an_unassigned_pull_request(
         issue.edit.call_args_list)
 
 
+@patch('octomanager.REPO_USERS', MagicMock())
 @patch('octomanager.Github')
 def test_specified_repo_is_acted_against(github):
     repo_name = 'some_org/some_repo'
@@ -53,3 +54,11 @@ def test_specific_repo_users_are_selected_from(github, repo_users, random):
     _add_single_unassigned_pull_request_and_return_issue(github)
     octomanage(repo_name)
     eq_([call(repo_users[repo_name])], random.choice.call_args_list)
+
+
+@patch('octomanager.REPO_USERS', {})
+@patch('octomanager.Github')
+def test_unconfigured_repository_raises_configurationerror(github):
+    _add_single_unassigned_pull_request_and_return_issue(github)
+    with assert_raises(ConfigurationError):
+        octomanage('org/repo_name')

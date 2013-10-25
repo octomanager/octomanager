@@ -17,11 +17,21 @@ def _get_authd_github():
     return Github("63c645c4c54933d1364e3f5367a55defe24b626f")
 
 
+class ConfigurationError(Exception):
+    pass
+
+
 class GithubRepositoryManager(object):
 
     def __init__(self, repo_name):
         self.github = _get_authd_github()
         self.repo = self.github.get_repo(repo_name)
+        try:
+            self.potential_assignees = REPO_USERS[repo_name]
+        except KeyError:
+            raise ConfigurationError(
+                'No potential users configured for {}'.format(repo_name)
+            )
 
     def _log(self, msg):
         LOGGER.info('[{}] {}'.format(self.repo.full_name, msg))
