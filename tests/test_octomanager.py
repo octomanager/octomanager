@@ -15,9 +15,16 @@ def test_assigns_users_randomly_to_an_unassigned_pull_request(
     ]
     issue = Mock(assignee=None)
     github.return_value.get_repo.return_value.get_issue.return_value = issue
-    octomanage()
+    octomanage('')
     eq_([call(users)], random.choice.call_args_list)
     eq_([call(random.choice.return_value)],
         github.return_value.get_user.call_args_list)
     eq_([call(assignee=github.return_value.get_user.return_value)],
         issue.edit.call_args_list)
+
+
+@patch('octomanager.Github')
+def test_specified_repo_is_acted_against(github):
+    repo_name = 'some_org/some_repo'
+    octomanage(repo_name)
+    eq_([call(repo_name)], github.return_value.get_repo.call_args_list)

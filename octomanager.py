@@ -13,9 +13,9 @@ def _get_authd_github():
 
 class GithubRepositoryManager(object):
 
-    def __init__(self):
+    def __init__(self, repo_name):
         self.github = _get_authd_github()
-        self._perform_pull_request_assignment('octomanager/test-repo')
+        self._perform_pull_request_assignment(repo_name)
 
     def _get_assignee(self):
         return self.github.get_user(random.choice(USERS))
@@ -29,9 +29,9 @@ class GithubRepositoryManager(object):
                 issue.edit(assignee=self._get_assignee())
 
 
-def octomanage():
-    GithubRepositoryManager()
+def octomanage(repo_name):
+    GithubRepositoryManager(repo_name)
 
 
 if __name__ == '__main__':
-    octomanage()
+    octomanage('octomanager/test-repo')
