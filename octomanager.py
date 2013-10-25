@@ -4,7 +4,7 @@ import random
 from github import Github
 
 
-USERS = ['arachnegl']
+USERS = ['arachnegl', 'OddBloke']
 
 
 def _get_authd_github():
