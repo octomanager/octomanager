@@ -32,6 +32,10 @@ class GithubRepositoryManager(object):
             raise ConfigurationError(
                 'No potential users configured for {}'.format(repo_name)
             )
+        if len(self.potential_assignees) == 0:
+            raise ConfigurationError(
+                'No potential users configured for {}'.format(repo_name)
+            )
 
     def _log(self, msg):
         LOGGER.info('[{}] {}'.format(self.repo.full_name, msg))

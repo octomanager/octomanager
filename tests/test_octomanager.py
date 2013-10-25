@@ -36,10 +36,11 @@ def test_assigns_users_randomly_to_an_unassigned_pull_request(
         issue.edit.call_args_list)
 
 
-@patch('octomanager.REPO_USERS', MagicMock())
+@patch('octomanager.REPO_USERS', new_callable=dict)
 @patch('octomanager.Github')
-def test_specified_repo_is_acted_against(github):
+def test_specified_repo_is_acted_against(github, repo_users):
     repo_name = 'some_org/some_repo'
+    repo_users[repo_name] = ['a user']
     octomanage(repo_name)
     eq_([call(repo_name)], github.return_value.get_repo.call_args_list)
 
@@ -62,3 +63,12 @@ def test_unconfigured_repository_raises_configurationerror(github):
     _add_single_unassigned_pull_request_and_return_issue(github)
     with assert_raises(ConfigurationError):
         octomanage('org/repo_name')
+
+
+@patch('octomanager.REPO_USERS', new_callable=dict)
+@patch('octomanager.Github')
+def test_empty_list_of_users_raises_configurationerror(github, repo_users):
+    repo_name = 'org/empty_list'
+    repo_users[repo_name] = []
+    with assert_raises(ConfigurationError):
+        octomanage(repo_name)
