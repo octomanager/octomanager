@@ -76,6 +76,10 @@ class GithubRepositoryManager(object):
         commit = pull_request.get_commits().reversed[0]
         status_string = COMMIT_STATUSES[status]
         commit.create_status(status_string)
+        issue = self.repo.get_issue(pull_request.number)
+        for comment in issue.get_comments():
+            if comment.user.login == issue.assignee.login and 'OCTOSITTER: +1' in comment.body:
+                commit.create_status('success')
 
 
 def perform_batch_job(repo_name):

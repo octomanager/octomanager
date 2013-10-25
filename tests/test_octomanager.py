@@ -39,7 +39,7 @@ def _enhance_github_mock(github_mock, repo_name, pull_request_assignees):
         pr_mock = _pull_request_mock(pull_request_assignee)
         pr_mock.number = n
         pull_request_mocks.append(pr_mock)
-        issue_mock = Mock(assignee=pull_request_assignee)
+        issue_mock = MagicMock(assignee=pull_request_assignee)
         issue_mocks.append(issue_mock)
     repo_mock.get_pulls.return_value = pull_request_mocks
     repo_mock.get_issue.side_effect = lambda n: issue_mocks[n]
@@ -124,6 +124,29 @@ class TestPullRequestAssignment(object):
         perform_batch_job(repo_name)
         issue_call_count = sum([issue.edit.call_count for issue in issues])
         eq_(1, issue_call_count)
+
+    def test_approval_comment_sets_success_status(self, github,
+                                                        repo_users):
+
+        repo_name = 'some_org/some_repo'
+        repo_users[repo_name] = ['a user']
+        github, pull_requests, issues = _enhance_github_mock(github,
+                                                             repo_name,
+                                                             [Mock(), None])
+        login = 'my nice login'
+        issues[0].get_comments.return_value = [
+            Mock(),
+            Mock(body='OCTOSITTER: +1', user=Mock(login=login)),
+            Mock(),
+        ]
+        issues[0].assignee = Mock(login=login)
+        perform_batch_job(repo_name)
+        most_recent_commit = (
+            pull_requests[0].get_commits.return_value.reversed[0]
+        )
+
+        eq_(call('success'),
+            most_recent_commit.create_status.call_args_list[-1])
 
 
 @patch('octomanager.REPO_USERS', {})
