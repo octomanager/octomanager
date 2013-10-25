@@ -73,11 +73,11 @@ class PullRequestAssignmentDriver(object):
             repo_manager.perform_pull_request_assignment(pull_request)
 
 
-def octomanage(repo_name):
+def perform_batch_job(repo_name):
     PullRequestAssignmentDriver(repo_name).perform_assignments()
 
 
 if __name__ == '__main__':
     logging.basicConfig(level='INFO',
                         format='%(asctime)s [%(levelname)s] %(message)s')
-    octomanage('octomanager/test-repo')
+    perform_batch_job('octomanager/test-repo')
