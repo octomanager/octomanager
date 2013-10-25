@@ -30,6 +30,23 @@ def _add_repository_with_name(github_mock, repo_name):
     github_mock.return_value.get_repo.return_value = Mock(full_name=repo_name)
 
 
+def _enhance_github_mock(github_mock, repo_name, pull_request_assignees):
+    repo_mock = github_mock.return_value.get_repo.return_value
+    repo_mock.full_name = repo_name
+    issue_mocks = []
+    pull_request_mocks = []
+    for n, pull_request_assignee in enumerate(pull_request_assignees):
+        pr_mock = _pull_request_mock(pull_request_assignee)
+        pr_mock.number = n
+        pull_request_mocks.append(pr_mock)
+        issue_mock = Mock(assignee=pull_request_assignee)
+        issue_mocks.append(issue_mock)
+    repo_mock.get_pulls.return_value = pull_request_mocks
+    repo_mock.get_issue.side_effect = lambda n: issue_mocks[n]
+    return github_mock, pull_request_mocks, issue_mocks
+
+
+
 @patch('octomanager.REPO_USERS', new_callable=dict)
 @patch('octomanager.Github')
 class TestPullRequestAssignment(object):
@@ -39,14 +56,13 @@ class TestPullRequestAssignment(object):
                                             self, random, github, repo_users):
         repo_name = 'some_org/random_assignment'
         repo_users[repo_name] = ['user #1', 'user #2']
-        _add_repository_with_name(github, repo_name)
-        issue = _add_single_unassigned_pull_request_and_return_issue(github)
+        github, _, issues = _enhance_github_mock(github, repo_name, [None])
         perform_batch_job(repo_name)
         eq_([call(repo_users[repo_name])], random.choice.call_args_list)
-        eq_([call(random.choice.return_value)],
-            github.return_value.get_user.call_args_list)
-        eq_([call(assignee=github.return_value.get_user.return_value)],
-            issue.edit.call_args_list)
+        get_user = github.return_value.get_user
+        eq_([call(random.choice.return_value)], get_user.call_args_list)
+        eq_([call(assignee=get_user.return_value)],
+            issues[0].edit.call_args_list)
 
     def test_specified_repo_is_acted_against(self, github, repo_users):
         repo_name = 'some_org/some_repo'
@@ -60,8 +76,7 @@ class TestPullRequestAssignment(object):
                                             self, random, github, repo_users):
         repo_name = 'some_org/repo_user_test'
         repo_users[repo_name] = ['user #1', 'user #2']
-        _add_repository_with_name(github, repo_name)
-        _add_single_unassigned_pull_request_and_return_issue(github)
+        _enhance_github_mock(github, repo_name, [None])
         perform_batch_job(repo_name)
         eq_([call(repo_users[repo_name])], random.choice.call_args_list)
 
@@ -79,30 +94,21 @@ class TestPullRequestAssignment(object):
                                                                 repo_users):
         repo_name = 'org/mark_pending'
         repo_users[repo_name] = ['user #1', 'user #2']
-        most_recent_commit = Mock()
-        _add_repository_with_name(github, repo_name)
-        pull_request = Mock(assignee=None)
-        _add_single_unassigned_pull_request_and_return_issue(github,
-                                                             pull_request)
-        pull_request.get_commits.return_value.reversed = [
-            most_recent_commit, Mock()
-        ]
+        _, pull_requests, _ = _enhance_github_mock(github, repo_name, [None])
         perform_batch_job(repo_name)
+        most_recent_commit = (
+            pull_requests[0].get_commits.return_value.reversed[0]
+        )
         eq_([call('pending')], most_recent_commit.create_status.call_args_list)
 
     def test_assigns_users_to_two_unassigned_pull_requests(self,
                                                            github,
                                                            repo_users):
         repo_name = 'org/two_unassigned'
-        _add_repository_with_name(github, repo_name)
+        github, _, issues = _enhance_github_mock(github,
+                                                 repo_name,
+                                                 [None, None])
         repo_users[repo_name] = ['single user']
-        github.return_value.get_repo.return_value.get_pulls.return_value = [
-            _pull_request_mock(), _pull_request_mock()
-        ]
-        issues = [Mock(assignee=None), Mock(assignee=None)]
-        github.return_value.get_repo.return_value.get_issue.side_effect = (
-            issues
-        )
         perform_batch_job(repo_name)
         for issue in issues:
             eq_([call(assignee=ANY)], issue.edit.call_args_list)
@@ -111,15 +117,13 @@ class TestPullRequestAssignment(object):
                                                             github,
                                                             repo_users):
         repo_name = 'org/one_assigned_one_not'
-        _add_repository_with_name(github, repo_name)
+        github, _, issues = _enhance_github_mock(github,
+                                                 repo_name,
+                                                 [Mock(), None])
         repo_users[repo_name] = ['single user']
-        github.return_value.get_repo.return_value.get_pulls.return_value = [
-            _pull_request_mock(assignee=Mock()),
-            _pull_request_mock()
-        ]
         perform_batch_job(repo_name)
-        eq_(1, github.return_value.get_repo.return_value.get_issue.return_value
-                                                            .edit.call_count)
+        issue_call_count = sum([issue.edit.call_count for issue in issues])
+        eq_(1, issue_call_count)
 
 
 @patch('octomanager.REPO_USERS', {})
