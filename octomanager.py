@@ -16,24 +16,33 @@ class GithubRepositoryManager(object):
     def __init__(self, repo_name):
         self.github = _get_authd_github()
         self.repo = self.github.get_repo(repo_name)
-        self._assign_all_unassigned_pull_requests()
 
     def _get_assignee(self):
         return self.github.get_user(random.choice(USERS))
 
-    def _assign_all_unassigned_pull_requests(self):
-        pull_requests = self.repo.get_pulls()
-        for pull_request in pull_requests:
-            self._perform_pull_request_assignment(pull_request)
+    def get_pulls(self):
+        return self.repo.get_pulls()
 
-    def _perform_pull_request_assignment(self, pull_request):
+    def perform_pull_request_assignment(self, pull_request):
         if pull_request.assignee is None:
             issue = self.repo.get_issue(pull_request.number)
             issue.edit(assignee=self._get_assignee())
 
 
+class PullRequestAssignmentDriver(object):
+
+    def __init__(self, repo_name):
+        self.repo_name = repo_name
+
+    def perform_assignments(self):
+        repo_manager = GithubRepositoryManager(self.repo_name)
+        pull_requests = repo_manager.get_pulls()
+        for pull_request in pull_requests:
+            repo_manager.perform_pull_request_assignment(pull_request)
+
+
 def octomanage(repo_name):
-    GithubRepositoryManager(repo_name)
+    PullRequestAssignmentDriver(repo_name).perform_assignments()
 
 
 if __name__ == '__main__':
