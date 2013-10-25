@@ -24,8 +24,6 @@ class ConfigurationError(Exception):
 class GithubRepositoryManager(object):
 
     def __init__(self, repo_name):
-        self.github = _get_authd_github()
-        self.repo = self.github.get_repo(repo_name)
         try:
             self.potential_assignees = REPO_USERS[repo_name]
         except KeyError:
@@ -36,6 +34,8 @@ class GithubRepositoryManager(object):
             raise ConfigurationError(
                 'No potential users configured for {}'.format(repo_name)
             )
+        self.github = _get_authd_github()
+        self.repo = self.github.get_repo(repo_name)
 
     def _log(self, msg):
         LOGGER.info('[{}] {}'.format(self.repo.full_name, msg))
