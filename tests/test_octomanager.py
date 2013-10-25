@@ -1,16 +1,21 @@
-from mock import call, MagicMock, Mock, patch
+from mock import ANY, call, MagicMock, Mock, patch
 from nose.tools import assert_raises, eq_
 
 from octomanager import ConfigurationError, perform_batch_job
 
 
-def _add_single_unassigned_pull_request_and_return_issue(
-                                        github_mock, pull_request_mock=None):
-    if pull_request_mock is None:
-        pull_request_mock = Mock(assignee=None)
+def _pull_request_mock(assignee=None):
+    pull_request_mock = Mock(assignee=assignee)
     pull_request_mock.get_commits.return_value.reversed = [
         Mock(), Mock()
     ]
+    return pull_request_mock
+
+
+def _add_single_unassigned_pull_request_and_return_issue(
+                                        github_mock, pull_request_mock=None):
+    if pull_request_mock is None:
+        pull_request_mock = _pull_request_mock()
     github_mock.return_value.get_repo.return_value.get_pulls.return_value = [
         pull_request_mock
     ]
@@ -95,3 +100,34 @@ def test_pull_requests_are_marked_as_pending_if_not_already(github,
     ]
     perform_batch_job(repo_name)
     eq_([call('pending')], most_recent_commit.create_status.call_args_list)
+
+
+@patch('octomanager.REPO_USERS', new_callable=dict)
+@patch('octomanager.Github')
+def test_assigns_users_to_two_unassigned_pull_requests(github, repo_users):
+    repo_name = 'org/two_unassigned'
+    _add_repository_with_name(github, repo_name)
+    repo_users[repo_name] = ['single user']
+    github.return_value.get_repo.return_value.get_pulls.return_value = [
+        _pull_request_mock(), _pull_request_mock()
+    ]
+    issues = [Mock(assignee=None), Mock(assignee=None)]
+    github.return_value.get_repo.return_value.get_issue.side_effect = issues
+    perform_batch_job(repo_name)
+    for issue in issues:
+        eq_([call(assignee=ANY)], issue.edit.call_args_list)
+
+
+@patch('octomanager.REPO_USERS', new_callable=dict)
+@patch('octomanager.Github')
+def test_assigns_users_only_to_unassigned_pull_requests(github, repo_users):
+    repo_name = 'org/one_assigned_one_not'
+    _add_repository_with_name(github, repo_name)
+    repo_users[repo_name] = ['single user']
+    github.return_value.get_repo.return_value.get_pulls.return_value = [
+        _pull_request_mock(assignee=Mock()),
+        _pull_request_mock()
+    ]
+    perform_batch_job(repo_name)
+    eq_(1, github.return_value.get_repo.return_value.get_issue.return_value
+                                                            .edit.call_count)
